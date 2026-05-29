@@ -40,7 +40,7 @@ Loam defines the substrate — the layer beneath all of the above.
 
 ## Install & Quickstart
 
-See the docs/getting_started.md for the full Quickstart. Short version:
+See the [docs/getting_started.md](docs/getting_started.md) for the full Quickstart. Short version:
 
 ```bash
 git clone https://github.com/loam-core/loam
@@ -105,7 +105,7 @@ Loam defines a minimal identity-native substrate composed of:
 - **State** — deterministic identity-scoped memory
 - **Runtimes** — subprocess and agent execution membranes
 
-See docs/architecture.md for the full overview.
+See [docs/architecture.md](docs/architecture.md) for the full overview.
 
 ## Examples
 
@@ -123,11 +123,11 @@ loam run <identity> examples/<path>/<agent>
 
 ## CLI Reference
 
-Every command and flag is documented in docs/cli_reference.md.
+Every command and flag is documented in [docs/cli_reference.md](docs/cli_reference.md).
 
 ## Contributing
 
-See CONTRIBUTING.md for guidelines on issues, pull requests, and the development workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on issues, pull requests, and the development workflow.
 
 ## License
 
