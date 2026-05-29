@@ -213,7 +213,7 @@ Examples:
 - `fs.*` — virtual filesystem
 - `http.request` — outbound HTTP
 - `process.run` — subprocess execution
-- `state.*` — identity state hashing
+- `state.*` — identity state path filesystem tools
 - `artifact.emit` — artifact creation
 
 If a tool is not listed, the identity cannot use it.
@@ -248,7 +248,7 @@ Example:
 ```toml
 [filesystem.mounts]
 output = "/home/user/documents/agent_output"
-```
+```k
 
 This exposes `output://` to the agent.
 
@@ -283,7 +283,7 @@ Reserved for future interactive approval hooks. Currently unused.
 
 ## 9. Configure LLM Backends
 
-Loam Core ships with backend implementations, but they require user-specific configuration.
+Loam ships with backend implementations, but they require user-specific configuration.
 Backend configs live under:
 
 ```text
