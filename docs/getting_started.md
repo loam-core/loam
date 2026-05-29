@@ -2,6 +2,34 @@
 
 A minimal, mechanical “get running in 5 minutes” guide.
 
+## 0. Prerequisites:
+
+### Install Git
+
+```bash
+sudo apt install git
+```
+
+### On Ubuntu/Debian, you need to install python3-venv
+
+```bash
+sudo apt install python3-venv
+```
+
+### Install curl if you prefer to use the package driver
+
+```bash
+sudo apt install curl
+```
+
+### Install Rust if you prefer to compile the package driver from source
+
+```
+curl https://sh.rustup.rs -sSf | sh
+source ~/.cargo/env
+```
+
+
 ## 1. Clone the Repository
 
 ```bash
@@ -36,20 +64,29 @@ The CLI now lives at:
 ./.venv/bin/loam
 ```
 
-## 3.1 Build the Native Driver (Required)
+## 3.1 Install the Native Driver (Required)
+Choose one of the two paths below.
 
-Loam uses a native Rust runtime (`libloam_driver.so`). Build it once after cloning:
+### Option A — No Rust (recommended)
+Download the prebuilt driver:
 
 ```bash
-cd src/loam/runtime/driver/native
+curl -LO https://github.com/loam-core/loam/releases/download/v0.1/libloam_driver.so
+```
+Move it into the driver directory:
+
+```bash
+mv libloam_driver.so src/loam/runtime/driver/
+```
+
+### Option B — Build the Driver from Source (requires Rust)
+```bash
+cd loam/runtime/driver/native
 cargo build --release --out-dir ..
+cd ../../..
 ```
-
 This produces:
-
-```bash
-src/loam/runtime/driver/libloam_driver.so
-```
+loam/runtime/driver/libloam_driver.so
 
 Loam automatically loads this file at runtime.
 
@@ -76,8 +113,7 @@ This creates:
 ```text
 ~/.loam/
     stores/        # identity stores
-    backends/      # backend configs
-    tools/         # tool configs
+    namespace.json # namespace metadata
 ```
 
 ## 6. Issue an Identity
@@ -317,6 +353,7 @@ allowed_models = ["gpt-4o-copilot"]
 
 Loam Core wraps any subprocess in an identity epoch.
 
+When running examples, use absolute paths or run the command from the repository root.
 ```bash
 loam exec <identity> echo "hello from loam"
 ```
@@ -332,14 +369,16 @@ This:
 Run a script:
 
 ```bash
-loam exec <identity> ./examples/hello.py
+loam exec <identity> echo "hello from loam"
 ```
 
 ## 11. Run a Loam-Native Agent (`run`)
 
 `loam run` is for agents that speak the Loam protocol.
 
+When running examples, use absolute paths or run the command from the repository root.
 ```bash
+cd /examples/ari
 loam run <identity> ./myagent.py --passphrase <passphrase>
 ```
 
