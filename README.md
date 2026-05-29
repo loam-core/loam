@@ -40,7 +40,7 @@ Loam defines the substrate — the layer beneath all of the above.
 
 ## Install & Quickstart
 
-See the docs/quickstart.md for the full Quickstart. Short version:
+See the docs/getting_started.md for the full Quickstart. Short version:
 
 ```bash
 git clone https://github.com/loam-core/loam
