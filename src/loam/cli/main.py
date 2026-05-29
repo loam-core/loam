@@ -48,6 +48,7 @@ from loam.cli.state import (
 
 # Ops subsystem
 from loam.cli.ops import (
+    cmd_init,
     cmd_verify_artifact,
     cmd_export_identity,
     cmd_import_identity,
@@ -356,6 +357,16 @@ def build_parser():
     )
     ops_sub = ops.add_subparsers(dest="action", required=True)
    
+    # -------------------------
+    # ops init
+    # -------------------------
+    p = ops_sub.add_parser(
+    "init",
+    help="Initialize the Loam substrate",
+    description="Create ~/.loam and namespace.json if missing."
+)
+    p.set_defaults(func=cmd_init)
+
     # -------------------------
     # ops verifyartifact
     # -------------------------

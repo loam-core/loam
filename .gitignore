@@ -9,6 +9,8 @@ venv/
 dist/
 .venv/
 .env/
+dist/
+build/
 
 # Loam runtime artifacts
 agents/
@@ -26,3 +28,9 @@ loam/shim/config.jsonc
 #vscode build
 build/
 .vscode/
+
+#compiled libs
+*.so
+*.dll
+*.dylib
+

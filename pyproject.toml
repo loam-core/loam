@@ -19,6 +19,9 @@ loam = "loam.cli.main:main"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+loam = ["runtime/driver/libloam_driver.so"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["loam*"]
