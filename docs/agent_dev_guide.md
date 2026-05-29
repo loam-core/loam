@@ -1,8 +1,8 @@
-Loam Core Agent Development Guide
+Loam Agent Development Guide
 
 How to write Loam‑native agents in Python, Rust, or any language.
 
-Loam agents are intentionally explicit. The substrate exposes identity, continuity, policy, and boundaries directly. This makes early agent development feel lower‑level than typical frameworks. Higher‑level ergonomic layers can now be built on top of the stable substrate, but they are intentionally out of scope for Loam Core.
+Loam agents are intentionally explicit. The substrate exposes identity, continuity, policy, and boundaries directly. This makes early agent development feel lower‑level than typical frameworks. Higher‑level ergonomic layers can now be built on top of the stable substrate, but they are intentionally out of scope for Loam.
 
 Loam agents are just processes that speak a simple JSON protocol over stdin/stdout. There is no embedded runtime, no framework, no magic.
 
@@ -69,7 +69,7 @@ After finish, the agent exits.
 Available Tools & Capabilities
 
 Loam agents run inside an identity‑native execution membrane. Inside that membrane, agents can call a set of substrate‑mediated tools. These tools are explicit, deterministic, logged in the chronicle, and governed by identity policy.
-This section lists everything an agent can do in Loam Core v0.1.
+This section lists everything an agent can do in Loam v0.1.
 
 LLM Cognition
 Agents can request model‑level reasoning via the substrate.

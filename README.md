@@ -1,115 +1,139 @@
-Loam Core
-Loam Core is a substrate for sovereign identity and durable continuity that spans executions.
-It gives any computational actor a cryptographically‑rooted identity and an append‑only continuity chain so it can remain accountable across time and boundaries.
+# Loam
 
-Modern computation has no concept of self. Processes don’t persist across time, tools don’t have identity, and agents can’t be accountable for their own actions. Loam provides the minimal primitives required for continuity: identity, epochs, and a local policy membrane. Everything built above this layer inherits these guarantees. Loam does not define the system — it defines the physics the system must obey.
+## What Loam Is
+Loam is a substrate for sovereign identity and durable continuity that spans executions. It
+gives any computational actor a cryptographically-rooted identity and an append-only continuity
+chain so it can remain accountable across time and boundaries.
 
-What Loam Provides
-Sovereign identity
+## Why Loam Exists
+Modern computation has no concept of self. Processes don’t persist across time, tools don’t have identity, and agents can’t be accountable for their own actions. 
+Loam provides the minimal primitives required for continuity — identity, epochs, and a local
+policy membrane. Everything built on top of this layer inherits those guarantees. Loam does not
+define a system; it defines the physics the system must obey.
 
-Durable continuity
+## What Loam Provides
 
-Identity epochs
+- Sovereign identity
+- Durable continuity
+- Identity epochs
+- Chronicle — semantic execution logs
+- Lineage
+- Revocation
+- Local policy enforcement
+- Capability secrets
+- Explicit boundaries
+- Actor lifecycle primitives
 
-Chronicle — semantic execution logs
+These are the minimal building blocks required for any agent, process, or tool to maintain a
+coherent identity across time.
 
-Lineage
+## What Loam Is Not
 
-Revocation
-
-Local policy enforcement
-
-Capability secrets
-
-Explicit boundaries
-
-Actor lifecycle primitives
-
-These are the minimal building blocks required for any agent, process, or tool to maintain a coherent identity across time.
-
-What Loam Is Not
 Loam is not:
 
-a framework
+- A framework
+- A platform
+- A cloud
+- A workflow engine
 
-a platform
+Loam defines the substrate — the layer beneath all of the above.
 
-a cloud
+## Install & Quickstart
 
-a workflow engine
+See the docs/quickstart.md for the full Quickstart. Short version:
 
-Loam defines the substrate — the layer beneath all of those.
-
-Install & Quickstart
-See the full Quickstart.
-
-Short version:
-
-Code
-git clone https://github.com/loam/loam-core
-cd loam-core
+```bash
+git clone https://github.com/loam-core/loam
+cd loam
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
+Install the Native Driver (Required)
+Choose one of the two paths below.
+
+Option A — No Rust (recommended)
+Download the prebuilt driver:
+
+```bash
+curl -LO https://github.com/loam-core/loam/releases/download/v0.1/libloam_driver.so
+```
+Move it into the driver directory:
+
+```bash
+mv libloam_driver.so loam/runtime/driver/
+```
+
+Option B — Build the Driver from Source (requires Rust)
+```bash
+cd loam/runtime/driver/native
+cargo build --release --out-dir ..
+cd ../../..
+```
+This produces:
+loam/runtime/driver/libloam_driver.so
+
 Initialize Loam:
 
-Code
+```bash
 loam ops init
 loam identity issue --name myagent
+```
+
 Run a program:
 
-Code
+```bash
 loam exec myagent echo "hello"
+```
+
 Run an agent:
 
-Code
+```bash
 loam run myagent ./agent.py
-Architecture Overview
-Loam defines a minimal identity‑native substrate:
+```
 
-Identity — cryptographic root of self
+## Architecture Overview
 
-Continuity — append‑only chain of epochs
+Loam defines a minimal identity-native substrate composed of:
 
-Epoch — a single execution boundary
+- **Identity** — cryptographic root of self
+- **Continuity** — append-only chain of epochs
+- **Epoch** — a single execution boundary
+- **Chronicle** — semantic execution record
+- **Policy** — local capability governance
+- **Secrets** — encrypted capability tokens
+- **State** — deterministic identity-scoped memory
+- **Runtimes** — subprocess and agent execution membranes
 
-Chronicle — semantic execution record
+See docs/architecture.md for the full overview.
 
-Policy — local capability governance
+## Examples
 
-Secrets — encrypted capability tokens
+See the `examples/` directory for:
 
-State — deterministic identity‑scoped memory
+- ARI agents
+- SDK agents
+- Rust native agents
 
-Runtimes — subprocess + agent execution membranes
+Run any example with:
 
-Full overview: Architecture Overview
+```bash
+loam run <identity> examples/<path>/<agent>
+```
 
-Examples
-See examples/ for:
+## CLI Reference
 
-ARI agents
+Every command and flag is documented in docs/cli_reference.md.
 
-SDK agents
+## Contributing
 
-Rust native agents
+See CONTRIBUTING.md for guidelines on issues, pull requests, and the development workflow.
 
-Run any example:
+## License
 
-Code
-loam run examples/<path>/<agent>
-CLI Reference
-Every command, every flag:
-CLI Reference
+Loam is licensed under the Apache 2.0 License — see LICENSE for details.
 
-Contributing
-See CONTRIBUTING.md for guidelines on issues, pull requests, and development workflow.
+## Status
 
-License
-Loam Core is licensed under the Apache 2.0 License.
-See LICENSE for details.
-
-Status
-Loam is early.
-The substrate is stabilizing, but details may evolve.
-Do not build production systems on this version.
+Loam is early-stage: the substrate is stabilizing but details may evolve. Do not build
+production systems on this version.

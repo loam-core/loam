@@ -1,192 +1,279 @@
-Loam Core CLI Reference
+# Loam CLI Reference
 
 The complete command surface of the Loam substrate.
 
 This reference lists:
-    • every subsystem
-    • every subcommand
-    • required/optional arguments
-    • one‑line descriptions
+- every subsystem
+- every subcommand
+- required/optional arguments
+- one-line descriptions
 
-It is mechanical, not conceptual. For architecture and mental models, see the Architecture 
-Overview.
-Top‑Level Structure
-Code
+It is mechanical, not conceptual. For architecture and mental models, see the Architecture Overview.
+
+### Store Identifiers
+
+Anywhere the CLI expects a <store> argument, you may supply any of the following:
+
+Human‑friendly name — the name you assigned with identity issue --name or identity name
+
+Store UUID — the directory name under ~/.loam/stores/
+
+Identity fingerprint — the cryptographic fingerprint shown in identity show
+
+All three forms resolve to the same identity store.
+If a command requires a specific form (rare), it is noted explicitly.
+
+## Top-Level Structure
+
+```bash
 loam <system> <action> [args...]
+```
 
-Systems:
-    • identity
-    • logs
-    • secret
-    • state
-    • ops
-    • run
-    • exec
+### Systems
 
-1. identity — Manage identity stores
-identity issue
+- `identity`
+- `logs`
+- `secret`
+- `state`
+- `ops`
+- `run`
+- `exec`
+
+## 1. `identity` — Manage identity stores
+
+### `identity issue`
 Issue a new identity store.
-Code
+
+```bash
 loam identity issue [--name <name>] [--plaintext] [--passphrase <pw>]
+```
+
 Arguments:
-    • --name — human‑friendly name
-    • --plaintext — issue unencrypted (insecure)
-    • --passphrase — non‑interactive encrypted issuance
 
-identity list
+- `--name` — human-friendly name
+- `--plaintext` — issue unencrypted (insecure)
+- `--passphrase` — non-interactive encrypted issuance
+
+### `identity list`
 List all identity stores.
-Code
+
+```bash
 loam identity list
+```
 
-identity show
+### `identity show`
 Show identity metadata.
-Code
+
+```bash
 loam identity show <store>
+```
 
-identity verify
-Verify continuity + store integrity.
-Code
+### `identity verify`
+Verify continuity and store integrity.
+
+```bash
 loam identity verify <store>
+```
 
-identity name
-Get or set a store’s human‑friendly name.
-Code
+### `identity name`
+Get or set a store’s human-friendly name.
+
+```bash
 loam identity name <store> [new_name]
+```
 
-identity rename
+### `identity rename`
 Rename a store.
-Code
+
+```bash
 loam identity rename <store> <new_name>
+```
 
-identity revoke
+### `identity revoke`
 Revoke an identity by fingerprint.
-Code
+
+```bash
 loam identity revoke <fingerprint> [--note <text>]
+```
 
-identity unrevoke
+### `identity unrevoke`
 Remove an identity from the revocation list.
-Code
+
+```bash
 loam identity unrevoke <fingerprint>
+```
 
-identity revoked
+### `identity revoked`
 List all revoked identities.
-Code
+
+```bash
 loam identity revoked
+```
 
-identity encrypt
+### `identity encrypt`
 Encrypt an existing identity store.
-Code
+
+```bash
 loam identity encrypt <identity>
+```
 
-identity decrypt
+### `identity decrypt`
 Decrypt an existing identity store.
-Code
+
+```bash
 loam identity decrypt <identity>
+```
 
-identity unlock
+### `identity unlock`
 Unlock an encrypted identity for this session.
-Code
+
+```bash
 loam identity unlock <identity>
+```
 
-identity lock
+### `identity lock`
 Lock an identity for this session.
-Code
+
+```bash
 loam identity lock <identity>
+```
 
-identity lock-all
+### `identity lock-all`
 Lock all identities for this session.
-Code
+
+```bash
 loam identity lock-all
+```
 
-2. logs — Inspect continuity + chronicle
-logs show
+## 2. `logs` — Inspect continuity and chronicle
+
+### `logs show`
 Show continuity or chronicle log.
-Code
+
+```bash
 loam logs show <continuity|chronicle> <store>
+```
 
-logs verify
+### `logs verify`
 Verify continuity and chronicle logs.
-Code
+
+```bash
 loam logs verify <store>
+```
 
-logs interlaced
-Show continuity + chronicle interwoven.
-Code
+### `logs interlaced`
+Show continuity and chronicle interwoven.
+
+```bash
 loam logs interlaced <store>
+```
 
-3. secret — Manage identity‑scoped secrets
-secret create
+## 3. `secret` — Manage identity-scoped secrets
+
+### `secret create`
 Create a secret.
-Code
-loam secret create <store> <name> [--value <value>]
 
-secret list
+```bash
+loam secret create <store> <secret_name> [--value <value>]
+```
+
+### `secret list`
 List secrets.
-Code
+
+```bash
 loam secret list <store>
+```
 
-secret load (temporary)
+### `secret load`
 Load a secret (temporary command).
-Code
-loam secret load <store> <name>
 
-secret rotate
+```bash
+loam secret load <store> <secret_name>
+```
+
+### `secret rotate`
 Rotate a secret.
-Code
-loam secret rotate <store> <name> [--value <value>]
 
-secret delete
+```bash
+loam secret rotate <store> <secret_name> [--value <value>]
+```
+
+### `secret delete`
 Delete a secret.
-Code
-loam secret delete <store> <name>
 
-4. state — Manage deterministic state hashing
-state enable
+```bash
+loam secret delete <store> <secret_name>
+```
+
+## 4. `state` — Manage deterministic state hashing
+
+### `state enable`
 Enable state hashing.
-Code
+
+```bash
 loam state enable <store> [--path <abs-path>]
+```
 
-state disable
+### `state disable`
 Disable state hashing.
-Code
+
+```bash
 loam state disable <store>
+```
 
-state show
+### `state show`
 Show state hashing status.
-Code
+
+```bash
 loam state show <store>
+```
 
-state set-path
+### `state set-path`
 Set a state path without enabling hashing.
-Code
+
+```bash
 loam state set-path <store> --path <abs-path>
+```
 
-state unset-path
+### `state unset-path`
 Remove state path and disable hashing.
-Code
+
+```bash
 loam state unset-path <store>
+```
 
-5. ops — Operational tools
-ops verifyartifact
+## 5. `ops` — Operational tools
+
+### `ops verifyartifact`
 Verify an artifact envelope against an identity’s public key.
-Code
+
+```bash
 loam ops verifyartifact <store> <artifact>
+```
 
-ops export
+### `ops export`
 Export a sealed identity store.
-Code
+
+```bash
 loam ops export <store> --out <dir> [--passphrase <pw>]
+```
 
-ops import
+### `ops import`
 Import a sealed identity store.
-Code
+
+```bash
 loam ops import <store-dir> [--passphrase <pw>]
+```
 
-6. run — Run a Loam‑native agent
-Code
-loam run [--passphrase <pw>] [--python-driver] [--legacy-python] <store> <exec_path> [args...]
+## 6. `run` — Run a Loam-native agent
 
-7. exec — Execute a program inside an identity
-Code
-loam exec [--passphrase <pw>] <store> <program> [args...]
+```bash
+loam run [--python-driver] [--legacy-python] <store> <exec_path> [--passphrase <pw>] [args...]
+```
+
+## 7. `exec` — Execute a program inside an identity
+
+```bash
+loam exec <store> <program> [--passphrase <pw>] [args...]
+```
 
