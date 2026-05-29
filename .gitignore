@@ -1,0 +1,28 @@
+# Keys
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+dist/
+.venv/
+.env/
+
+# Loam runtime artifacts
+agents/
+loam/identity/*.json
+**/secret_key.bin
+.loam/tmp/
+.loam/codehelper
+
+# Local scratch configs
+loam/shim/config.jsonc
+
+# Logs
+*.log
+
+#vscode build
+build/
+.vscode/

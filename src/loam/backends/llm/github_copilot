@@ -1,0 +1,63 @@
+# /loam/backends/llm/github_copilot.py
+
+import sys
+from typing import Any, Dict
+from .base import LLMBackend
+from .copilot_client import CopilotClient
+
+
+class Backend(LLMBackend):
+    provider_name = "github_copilot"
+    vendor_name = "github_copilot"
+
+    # v0.1 capability flags
+    supports_streaming = False
+    supports_embeddings = False
+    supports_tools = False
+
+    def __init__(self, rt):
+        print("[GITHUB COPILOT BACKEND INIT]", file=sys.stderr)
+        super().__init__(rt)
+
+        # Load plaintext GitHub token from identity store
+        self.token = rt.get_secret("github_token")
+
+        # Initialize the Copilot client
+        self.client = CopilotClient(token=self.token)
+
+    def think(self, input: str, model: str | None = None,
+              tags: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        try:
+            model = self.normalize_model_name(model or "gpt-4o-copilot")
+            tags = tags or {}
+
+            # GitHub Copilot API call
+            response = self.client.chat(
+                model=model,
+                messages=[{"role": "user", "content": input}],
+                extra=tags,
+            )
+
+            output = response["choices"][0]["message"]["content"]
+
+            # GitHub Copilot does NOT provide usage → canonical None fields
+            usage = {
+                "prompt_tokens": None,
+                "completion_tokens": None,
+                "total_tokens": None,
+            }
+
+            return {
+                "output": output,
+                "usage": usage,
+                "model": model,
+                "vendor": self.vendor_name,
+            }
+
+        except Exception as e:
+            return {
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e),
+                }
+            }
