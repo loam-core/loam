@@ -61,7 +61,7 @@ curl -LO https://github.com/loam-core/loam/releases/download/v0.1/libloam_driver
 Move it into the driver directory:
 
 ```bash
-mv libloam_driver.so loam/runtime/driver/
+mv libloam_driver.so src/loam/runtime/driver/
 ```
 
 Option B — Build the Driver from Source (requires Rust)
