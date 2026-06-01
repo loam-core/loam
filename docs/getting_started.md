@@ -362,7 +362,6 @@ allowed_models = ["gpt-4o-copilot"]
 
 Loam Core wraps any subprocess in an identity epoch.
 
-When running examples, use absolute paths or run the command from the repository root.
 ```bash
 loam exec <identity> echo "hello from loam"
 ```
@@ -378,7 +377,7 @@ This:
 Run a script:
 
 ```bash
-loam exec <identity> echo "hello from loam"
+loam exec <identity> ./hello.sh
 ```
 
 ## 11. Run a Loam-Native Agent (`run`)

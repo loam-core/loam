@@ -1,42 +1,57 @@
 # Loam
 
 ## What Loam Is
-Loam is a substrate for sovereign identity and durable continuity that spans executions. It
-gives any computational actor a cryptographically-rooted identity and an append-only continuity
-chain so it can remain accountable across time and boundaries.
+
+Loam is an execution substrate that gives any computational actor a stable, cryptographically‑verifiable self.
+It provides identity and continuity that persist across runs, processes, machines, and time.
+
+Loam does not define how agents think, act, or communicate.
+It defines the physics those systems run on: identity, epochs, continuity, lineage, and local policy boundaries.
+
+Anything built on top of Loam inherits these guarantees.
 
 ## Why Loam Exists
-Modern computation has no concept of self. Processes don’t persist across time, tools don’t have identity, and agents can’t be accountable for their own actions. 
-Loam provides the minimal primitives required for continuity — identity, epochs, and a local
-policy membrane. Everything built on top of this layer inherits those guarantees. Loam does not
-define a system; it defines the physics the system must obey.
+
+Modern computation has no concept of self.
+Processes start and die. Tools run without identity. Agents cannot prove who they are or what they’ve done.
+
+Loam introduces the minimal primitives required for durable, accountable computation:
+
+- a sovereign identity
+- an append‑only continuity chain
+- verifiable execution epochs
+- a semantic chronicle
+- a local capability membrane
+
+These are the foundations needed for long‑lived agents, verifiable tools, and accountable automation.
 
 ## What Loam Provides
 
-- Sovereign identity
-- Durable continuity
-- Identity epochs
-- Chronicle — semantic execution logs
-- Lineage
-- Revocation
-- Local policy enforcement
-- Capability secrets
-- Explicit boundaries
-- Actor lifecycle primitives
+Loam exposes a small, explicit set of substrate‑level primitives:
 
-These are the minimal building blocks required for any agent, process, or tool to maintain a
-coherent identity across time.
+- Sovereign identity — cryptographic root of self
+- Continuity — append‑only chain of execution epochs
+- Chronicle — semantic execution record
+- Lineage — ancestry and derivation tracking
+- Revocation — substrate‑level invalidation
+- Local policy — capability boundaries and enforcement
+- Secrets — encrypted capability envelopes
+- State integrity — identity‑scoped integrity and continuity for developer‑managed state
+- Runtimes — subprocess and agent execution membranes
+
+These are the minimal building blocks required for any agent, process, or tool to maintain a coherent identity across time.
 
 ## What Loam Is Not
 
 Loam is not:
 
-- A framework
-- A platform
-- A cloud
-- A workflow engine
+- a framework
+- a platform
+- a cloud
+- a workflow engine
+- an agent model
 
-Loam defines the substrate — the layer beneath all of the above.
+Loam defines the substrate beneath all of those.
 
 ## Install & Quickstart
 
