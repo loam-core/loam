@@ -16,15 +16,18 @@ def cmd_exec(args):
     else:
         program_args = args.args
 
+    # --- FIX: resolve the program path once ---
+    program_path = Path(args.program).expanduser().resolve()
+
     # Construct runtime for this execution
     runtime = ExecRuntime(
         identity_path=store_path(store_id),
-        workdir=str(Path(args.program).resolve().parent),
+        workdir=str(program_path.parent),
         passphrase=args.passphrase,
     )
 
     # Execute the program inside the store envelope
-    code, out, err = runtime.run_program(args.program, program_args)
+    code, out, err = runtime.run_program(str(program_path), program_args)
 
     print(out)
     if err:

@@ -3,9 +3,11 @@
 This project follows semantic versioning.
 
 ### Fixed
+- CLI: Fixed path resolution for run and exec commands
 - CLI: `ops init` was not wired correctly; now initializes substrate as documented.
 
 ### Changed
+- Documentation: cleaned up agent examples using new path resolution fix
 - Documentation: major rewrite and reorganization for clarity and correctness.
 - Quickstart renamed to `getting_started.md` and validated on a clean VM.
 

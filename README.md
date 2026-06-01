@@ -66,12 +66,19 @@ mv libloam_driver.so src/loam/runtime/driver/
 
 Option B — Build the Driver from Source (requires Rust)
 ```bash
-cd loam/runtime/driver/native
-cargo build --release --out-dir ..
-cd ../../..
+cd src/loam/runtime/driver/native
+
+cargo build --release
 ```
 This produces:
 loam/runtime/driver/libloam_driver.so
+
+Move it to the driver folder.
+
+```bash
+mv target/release/libloam_driver.so ..
+cd ~/loam
+```
 
 Initialize Loam:
 
@@ -89,7 +96,7 @@ loam exec myagent echo "hello"
 Run an agent:
 
 ```bash
-loam run myagent ./agent.py
+loam run myagent examples/ari/ari_agent.py
 ```
 
 ## Architecture Overview

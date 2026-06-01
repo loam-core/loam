@@ -1,6 +1,6 @@
-# Loam Quickstart
+# Loam - Getting Started
 
-A minimal, mechanical “get running in 5 minutes” guide.
+This guide walks you through setting up Loam, issuing your first identity, configuring LLM backends, and running an agent under real substrate policy. It’s hands‑on, but it also introduces the core concepts you need to understand how Loam works.
 
 ## 0. Prerequisites:
 
@@ -80,13 +80,21 @@ mv libloam_driver.so src/loam/runtime/driver/
 ```
 
 ### Option B — Build the Driver from Source (requires Rust)
+
 ```bash
-cd loam/runtime/driver/native
-cargo build --release --out-dir ..
-cd ../../..
+cd src/loam/runtime/driver/native
+
+cargo build --release
 ```
 This produces:
 loam/runtime/driver/libloam_driver.so
+
+Move it to the driver folder.
+
+```bash
+mv target/release/libloam_driver.so ..
+cd ~/loam
+```
 
 Loam automatically loads this file at runtime.
 
@@ -248,7 +256,7 @@ Example:
 ```toml
 [filesystem.mounts]
 output = "/home/user/documents/agent_output"
-```k
+```
 
 This exposes `output://` to the agent.
 
@@ -262,7 +270,8 @@ Example:
 allowed_domains = ["api.github.com", "*"]
 ```
 `*.github.com` works as well.
-`*` is allowed but not recommended.
+
+`*` will allow all domains, but is not recommended.
 
 #### `[llm]`
 
@@ -376,10 +385,14 @@ loam exec <identity> echo "hello from loam"
 
 `loam run` is for agents that speak the Loam protocol.
 
-When running examples, use absolute paths or run the command from the repository root.
 ```bash
-cd /examples/ari
-loam run <identity> ./myagent.py --passphrase <passphrase>
+loam run <identity> examples/ari/ari_agent.py --passphrase <passphrase>
+```
+
+or 
+ 
+```bash
+loam run <identity> examples/sdk/myagent.py --passphrase <passphrase>
 ```
 
 This:
@@ -397,7 +410,7 @@ If the backend is unsupported or disallowed:
 unexpected error: Unknown LLM provider: ollama
 ```
 
-> Note: The HTTP and `myagent.py` examples use `example.com`, which is not allowed by default policy.
+> NOTE: The ARI  and SDK examples use `example.com`, which is not allowed by default policy.
 >
 > To run it, add `example.com` (or `*` to allow all domains) to `[http].allowed_domains` in your identity TOML.
 

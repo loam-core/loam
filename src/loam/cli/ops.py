@@ -58,7 +58,7 @@ def cmd_init(args):
 
 def cmd_verify_artifact(args):
     store_id = resolve_store_identifier(args.store)
-    envelope_path = Path(args.artifact)
+    envelope_path = Path(args.artifact).expanduser().resolve()
 
     envelope = load_artifact_envelope(envelope_path)
     atype = envelope.get("artifact_type")
@@ -79,7 +79,7 @@ def cmd_verify_artifact(args):
 
 def cmd_verify_file_artifact(args):
     # Use args.artifact, not args.path
-    envelope_path = Path(args.artifact)
+    envelope_path = Path(args.artifact).expanduser().resolve()
 
     # Load envelope
     envelope = load_artifact_envelope(envelope_path)
@@ -126,7 +126,7 @@ def cmd_verify_file_artifact(args):
 
 def cmd_export_identity(args):
     store_id = resolve_store_identifier(args.store)
-    out_dir = Path(args.out)
+    out_dir = Path(args.out).expanduser().resolve()
 
     # sealed-only: passphrase required (prompt if missing)
     passphrase = args.passphrase
@@ -146,7 +146,7 @@ def cmd_export_identity(args):
 # ------------------------------------------------------------
 
 def cmd_import_identity(args):
-    bundle_dir = Path(args.store)
+    bundle_dir = Path(args.store).expanduser().resolve()
 
     # sealed-only: passphrase required (prompt if missing)
     passphrase = args.passphrase

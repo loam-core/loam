@@ -34,3 +34,6 @@ build/
 *.dll
 *.dylib
 
+# Native driver build artifacts
+src/loam/runtime/driver/native/target/
+src/loam/runtime/driver/native/Cargo.lock

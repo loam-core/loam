@@ -25,8 +25,8 @@ def cmd_run(args):
     if level != "ok":
         print_chronicle_attestation(level, reason, details)
 
-    # Resolve the executable path the operator provided
-    exec_path = Path(args.exec_path).resolve()
+    # --- FIX: resolve the agent path once ---
+    exec_path = Path(args.exec_path).expanduser().resolve()
 
     # Construct runtime for this execution
     runtime = AgentRuntime(
@@ -39,7 +39,7 @@ def cmd_run(args):
 
     # Execute the command inside the store envelope
     status, result = runtime.run(
-        agent_path=args.exec_path,
+        agent_path=str(exec_path),   # <-- FIX: use resolved path
         agent_args=agent_args,
     )
 
@@ -55,6 +55,7 @@ def cmd_run(args):
 
     print("Execution finished:", status, result)
     return 0
+
 
 
 
