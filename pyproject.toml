@@ -11,6 +11,7 @@ dependencies = [
     "httpx",
     "tomli_w",
     "cryptography",
+    "reqeusts",
 ]
 
 [project.scripts]

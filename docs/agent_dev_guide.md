@@ -1,14 +1,10 @@
 # Loam Agent Development Guide
 
-How to write Loam-native agents in Python, Rust, or any language.
+How to write Loam‑native agents in Python, Rust, or any language.
 
-Loam agents are intentionally explicit. The substrate exposes identity, continuity, policy,
-and boundaries directly. This makes early agent development feel lower-level than typical
-frameworks. Higher-level ergonomic layers can be built on top of the stable substrate, but
-they are intentionally out of scope for Loam.
+Loam agents are intentionally explicit. The substrate exposes identity, continuity, policy, and boundaries directly. This makes early agent development feel lower‑level than typical frameworks, but it also gives you a stable, language‑agnostic foundation to build on.
 
-Loam agents are processes that speak a simple JSON protocol over stdin/stdout. There is no
-embedded runtime, no framework, and no magic.
+At the core, a Loam agent is just a process that speaks a small JSON protocol over stdin/stdout. There is no embedded runtime, no VM, and no framework magic. 
 
 If your program can:
 
@@ -16,7 +12,15 @@ If your program can:
 - write a line of JSON
 - flush stdout
 
-…then it can be a Loam agent. This guide explains how.
+…then it can be a Loam agent.
+
+Loam provides three layers for writing agents, all built on the same substrate boundary:
+
+- the raw ARI protocol (the wire format)
+- the ARI Agent class (the Python implementation of that protocol)
+- the SDK (ergonomic helpers built on top of the ARI Agent class)
+
+Most developers will use the SDK, but all three layers matter because they define the substrate boundary.
 
 ## 1. What a Loam Agent Is
 
@@ -29,12 +33,11 @@ A Loam agent is:
 - governed by identity policy
 - recorded in continuity and chronicle
 
-Agents do not link against Loam (unless using the Python SDK). They do not run inside a VM
-or container — they are plain processes.
+Agents do not link against Loam. Python agents may import the SDK, but they still run as normal processes. They do not run inside a VM or container — they are plain processes.
 
 ## 2. The Loam Agent Protocol (ARI)
 
-Every agent must speak the ARI protocol.
+The ARI protocol defines the JSON messages exchanged between the runtime and the agent. Every agent, regardless of language or SDK, ultimately speaks this protocol.
 
 ### 2.1 Init handshake
 
@@ -209,10 +212,27 @@ Artifacts | `artifact.emit` | Emit signed artifacts
 Simulation | `simulate` | Run simulated execution
 Human input | `await_input` | Ask operator for input
 
-## 3. Writing a Raw ARI Agent (bare protocol)
 
-This is the canonical minimal agent. It shows the protocol loop with no SDK, no helpers,
-and no magic.
+# Writing Loam Agents
+>[!NOTE]
+> **Which layer should I use?**
+>- If you’re writing Python agents, start with the [SDK](#5-writing-an-sdk-agent-ergonomic-python).
+>- If you’re integrating Loam into another Python framework, use the [ARI Agent class](#4-writing-a-python-agent-using-the-ari-agent-class).
+>- If you’re building a Loam SDK or runtime in another language, use the [raw ARI](#3-writing-a-raw-ari-protocol-agent) protocol.
+
+## 3. Writing a Raw ARI Protocol Agent
+
+This example speaks the ARI protocol directly over stdin/stdout with no helper classes. It is the lowest‑level way to write a Loam agent and shows exactly how the runtime and agent exchange JSON messages.
+
+A raw ARI agent handles:
+- init handshake
+- sending think requests
+- receiving think_result
+- calling tools manually
+- routing tool_result messages
+- sending the final finish message
+
+Everything is done by writing JSON lines to stdout and reading JSON lines from stdin.
 
 ```python
 #!/usr/bin/env python3
@@ -223,23 +243,66 @@ def send(msg):
     sys.stdout.flush()
 
 def main():
-    # Receive init
-    init = json.loads(sys.stdin.readline())
+    # 1. Receive init
+    init_line = sys.stdin.readline()
+    init_msg = json.loads(init_line)
     send({"type": "init", "status": "ok"})
 
-    # Ask runtime to think
-    send({"type": "think", "input": "Say hello"})
+    # 2. Ask the runtime to think
+    send({
+        "type": "think",
+        "input": "Say hello",
+        "backend": "ollama",
+        "model": "llama3.1:8b"
+    })
 
-    # Wait for think_result
+    greeting = None
+
+    # 3. Wait for think_result
     for line in sys.stdin:
         msg = json.loads(line)
-        if msg["type"] == "think_result":
-            send({
-                "type": "finish",
-                "status": "ok",
-                "result": {"greeting": msg["result"]}
-            })
-            return
+        if msg.get("type") == "think_result":
+            greeting = msg.get("result")
+            break
+
+    # 4. Write greeting to scratch
+    send({
+        "type": "call_tool",
+        "call_id": "write1",
+        "name": "fs.write",
+        "args": [{"path": "scratch://hello.txt", "content": greeting}],
+    })
+
+    # 5. Wait for fs.write result
+    for line in sys.stdin:
+        msg = json.loads(line)
+        if msg.get("type") == "tool_result" and msg.get("call_id") == "write1":
+            break
+
+    # 6. Read it back
+    send({
+        "type": "call_tool",
+        "call_id": "read1",
+        "name": "fs.read",
+        "args": [{"path": "scratch://hello.txt"}],
+    })
+
+    reread = None
+    for line in sys.stdin:
+        msg = json.loads(line)
+        if msg.get("type") == "tool_result" and msg.get("call_id") == "read1":
+            reread = json.loads(msg["stdout"]).get("content")
+            break
+
+    # 7. Finish
+    send({
+        "type": "finish",
+        "status": "ok",
+        "result": {
+            "greeting": greeting,
+            "stored": reread,
+        }
+    })
 
 if __name__ == "__main__":
     main()
@@ -247,79 +310,107 @@ if __name__ == "__main__":
 
 This is the pure substrate version.
 
-## 4. Writing an ARI Shim Agent (Python)
+## 4. Writing a Python Agent Using the ARI Agent Class
 
-Your `loam_agent.Agent` class wraps the protocol loop so you don’t have to.
+Loam provides a Python implementation of the ARI protocol in loam.runtime.ari.Agent. This class implements the entire protocol loop for you — the init handshake, reading and writing JSON messages, waiting for tool and think results, handling secret and state operations, emitting artifacts, running simulations, and sending the final finish message. You only implement your agent’s main() method.
 
-Example: HTTP agent (shim)
+The ARI Agent class handles:
+- init handshake
+- JSON message I/O
+- tool calls and tool_result routing
+- think calls and think_result routing
+- secret operations
+- state read/write
+- artifact emission
+- simulation requests
+- finish messages
+
+### Example:
 
 ```python
 #!/usr/bin/env python3
-from loam_agent import Agent
+from loam.runtime.ari import Agent
 import json
 
-def main():
-    agent = Agent()
+class HelloAgent(Agent):
+    def main(self):
+        # 1. LLM cognition
+        greeting = self.llm_think(
+            "Say hello",
+            backend="ollama",
+            model="llama3.1:8b"
+        )
 
-    url = agent.args[0] if agent.args else "https://example.com"
+        # 2. Write to scratch
+        self.fs_write("scratch://hello.txt", greeting)
 
-    resp = agent.tool("http.request", {
-        "method": "GET",
-        "url": url,
-        "headers": {},
-        "body": None,
-    })
+        # 3. Read it back
+        reread_raw = self.fs_read("scratch://hello.txt")
+        reread = reread_raw if isinstance(reread_raw, str) else None
 
-    body = resp["stdout"]
-    try:
-        parsed = json.loads(body) if body else None
-    except:
-        parsed = body
-
-    agent.finish({
-        "requested_url": url,
-        "exit_code": resp["exit_code"],
-        "body": parsed,
-        "artifact": resp["artifact"],
-    })
+        # 4. Finish
+        self.finish({
+            "greeting": greeting,
+            "stored": reread,
+        })
 
 if __name__ == "__main__":
-    main()
+    HelloAgent().main()
+
 ```
 
 This is the Python ARI style.
 
 ## 5. Writing an SDK Agent (ergonomic Python)
 
-The SDK adds helpers and nicer syntax but preserves the protocol.
+The SDK provides a thin ergonomic layer on top of the ARI Agent class. It does not change the protocol — it simply makes common operations easier to write by wrapping tool calls and cognition in small helper functions.
+
+SDK helpers wrap:
+- LLM cognition (llm)
+- HTTP requests (http)
+- filesystem operations (read, write)
+- secret operations (secret)
+- finishing (finish)
+
+This lets you write concise agent code without manually constructing JSON messages or calling `agent.tool(...)` directly. The SDK is optional — it adds ergonomics, not new capabilities.
+
+Example:
 
 ```python
+#!/usr/bin/env python3
 from loam.runtime.ari import Agent
-from loam.sdk.ari_helpers import llm, finish, read, write, http, secret
+from loam.sdk.ari_helpers import llm, finish, write, read
 
 class MyAgent(Agent):
     def main(self):
-        greeting = llm(self, "Say hello", backend="ollama", model="llama3.1:8b")
+        # LLM cognition
+        greeting = llm(
+            self,
+            "Say hello",
+            backend="ollama",
+            model="llama3.1:8b"
+        )
 
-        mac = secret(self).hmac("openai_api_key", b"hello world")
-
+        # SDK filesystem helpers (not available on the ARI class)
         write(self, "scratch://hello.txt", greeting)
         stored = read(self, "scratch://hello.txt")
-
-        resp = http(self, "GET", "https://example.com")
 
         finish(self, {
             "greeting": greeting,
             "stored": stored,
-            "http": resp,
         })
+
+if __name__ == "__main__":
+    MyAgent().main()
 ```
 
 This is the ergonomic version.
 
 ## 6. Writing a Rust Agent
 
-Your Rust agent is a minimal ARI example. Example (annotated):
+This example uses the raw ARI protocol directly, just like Section 3, but implemented in Rust. It demonstrates that ARI is language-agnostic.
+
+Example:
 
 ```rust
 use std::io::{self, BufRead, Write};
@@ -351,7 +442,6 @@ fn main() {
 }
 ```
 
-This is the bare-metal ARI loop in Rust. It demonstrates that ARI is language-agnostic.
 
 ## 7. Tools, Secrets, State, Artifacts
 

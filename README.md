@@ -53,9 +53,21 @@ Loam is not:
 
 Loam defines the substrate beneath all of those.
 
+## Substrate vs. Agent Model
+Loam defines the substrate protocol that agents must speak in order to run with identity, continuity, and accountability.
+It does not define how agents think, plan, remember, or behave.
+
+The [Loam Agent Development Guide](docs/agent_dev_guide.md) teaches how to write a process that runs inside the Loam substrate and speaks its protocol.
+
+It does not prescribe a cognitive architecture or agent model.
+
+Any reasoning loop, planning system, or tool‑use strategy can run on Loam as long as it respects the substrate boundary.
+
 ## Install & Quickstart
 
-See the [docs/getting_started.md](docs/getting_started.md) for the full Quickstart. Short version:
+See the [Getting Started Guide](docs/getting_started.md) for the full introduction to Loam. 
+
+### Short version:
 
 ```bash
 git clone https://github.com/loam-core/loam
@@ -127,7 +139,7 @@ Loam defines a minimal identity-native substrate composed of:
 - **State** — deterministic identity-scoped memory
 - **Runtimes** — subprocess and agent execution membranes
 
-See [docs/architecture.md](docs/architecture.md) for the full overview.
+See the [Architecture document](docs/architecture.md) for the full overview.
 
 ## Examples
 
@@ -145,11 +157,11 @@ loam run <identity> examples/<path>/<agent>
 
 ## CLI Reference
 
-Every command and flag is documented in [docs/cli_reference.md](docs/cli_reference.md).
+Every command and flag is documented in the [CLI Reference](docs/cli_reference.md).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on issues, pull requests, and the development workflow.
+See [CONTRIBUTING](CONTRIBUTING.md) for guidelines on issues, pull requests, and the development workflow.
 
 ## License
 

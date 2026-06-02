@@ -409,7 +409,7 @@ If the backend is unsupported or disallowed:
 unexpected error: Unknown LLM provider: ollama
 ```
 
-> NOTE: The ARI  and SDK examples use `example.com`, which is not allowed by default policy.
+> [!NOTE] The ARI  and SDK examples use `example.com`, which is not allowed by default policy.
 >
 > To run it, add `example.com` (or `*` to allow all domains) to `[http].allowed_domains` in your identity TOML.
 

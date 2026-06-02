@@ -77,3 +77,30 @@ from loam.sdk.secret import Secrets
 
 def secret(agent):
     return Secrets(agent)
+
+# -------------------------
+# Binding helper
+# -------------------------
+def bind(agent):
+    """
+    Bind all SDK helper functions to a specific Agent instance.
+    Returns a namespace of callables with `agent` pre‑applied.
+    """
+    return (
+        lambda *args, **kwargs: llm(agent, *args, **kwargs),
+        lambda *args, **kwargs: http(agent, *args, **kwargs),
+        lambda *args, **kwargs: read(agent, *args, **kwargs),
+        lambda *args, **kwargs: write(agent, *args, **kwargs),
+        lambda *args, **kwargs: delete(agent, *args, **kwargs),
+        lambda *args, **kwargs: listdir(agent, *args, **kwargs),
+        lambda *args, **kwargs: search(agent, *args, **kwargs),
+        lambda *args, **kwargs: state_read(agent, *args, **kwargs),
+        lambda *args, **kwargs: state_write(agent, *args, **kwargs),
+        lambda *args, **kwargs: run(agent, *args, **kwargs),
+        lambda *args, **kwargs: simulate(agent, *args, **kwargs),
+        lambda *args, **kwargs: emit(agent, *args, **kwargs),
+        lambda *args, **kwargs: secret(agent, *args, **kwargs),
+        lambda *args, **kwargs: finish(agent, *args, **kwargs),
+        lambda prompt: agent.input(prompt),
+    )
+

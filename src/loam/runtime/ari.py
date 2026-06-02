@@ -78,16 +78,17 @@ class Agent:
     # Wait/Input
     # ============================================================
 
-    async def input(self, prompt: str) -> str:
-        call_id = self._next_call_id()
-        await self._send({
+    def input(self, prompt: str) -> str:
+        call_id = str(uuid.uuid4())
+        self._send_json({
             "type": "await_input",
             "call_id": call_id,
             "prompt": prompt,
         })
-        msg = await self._recv()
-        assert msg["type"] == "input"
-        return msg["value"]
+        while True:
+            msg = self._read_json()
+            if msg and msg.get("type") == "input" and msg.get("call_id") == call_id:
+                return msg["value"]
 
 
     # ============================================================
