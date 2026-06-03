@@ -171,3 +171,7 @@ Loam is licensed under the Apache 2.0 License — see LICENSE for details.
 
 Loam is early-stage: the substrate is stabilizing but details may evolve. Do not build
 production systems on this version.
+
+## Contact
+
+loam-dev@proton.me
