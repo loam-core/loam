@@ -2,7 +2,7 @@
 
 ## What Loam Is
 
-Loam is an execution substrate that gives any computational actor a stable, cryptographically‑verifiable self.
+Loam is an execution substrate that gives any computational process a stable, cryptographically‑verifiable self.
 It provides identity and continuity that persist across runs, processes, machines, and time.
 
 Loam does not define how agents think, act, or communicate.
