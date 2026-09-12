@@ -42,3 +42,6 @@ class Context:
 
     def state_write(self, path, data):
         return self.agent.state_write(path, data)
+
+    def state_write_detailed(self, path, data):
+        return self.agent.state_write_detailed(path, data)

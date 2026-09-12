@@ -39,6 +39,9 @@ def state_read(agent, path):
 def state_write(agent, path, data):
     return agent.state_write(path, data)
 
+def state_write_detailed(agent, path, data):
+    return agent.state_write_detailed(path, data)
+
 # -------------------------
 # HTTP helpers
 # -------------------------

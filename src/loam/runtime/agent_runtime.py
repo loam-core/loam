@@ -59,6 +59,7 @@ class AgentRuntime(IdentityRuntime):
         self.force_python_driver = force_python_driver
         self.legacy_python = legacy_python
         self.scratch_dir = None
+        self._state_write_sessions = {}
         
         # Driver selection
         driver_lib = os.getenv("LOAM_DRIVER")
@@ -147,6 +148,7 @@ class AgentRuntime(IdentityRuntime):
 
         finally:
             # ALWAYS clean up scratch, even if the agent crashes
+            self._cleanup_state_write_sessions()
             shutil.rmtree(self.scratch_dir, ignore_errors=True)
 
 
@@ -417,6 +419,27 @@ class AgentRuntime(IdentityRuntime):
     def _state_root(self):
         return self.state_dir
 
+    def _cleanup_state_write_sessions(self):
+        """Close/remove any chunked state.write sessions an agent left dangling
+        (e.g. crashed mid-stream without calling write_commit/write_abort)."""
+        sessions = getattr(self, "_state_write_sessions", None)
+        if not sessions:
+            return
+        for handle, session in list(sessions.items()):
+            try:
+                fh = session.get("fh")
+                if fh and not fh.closed:
+                    fh.close()
+            except Exception:
+                pass
+            try:
+                tmp_path = session.get("tmp_path")
+                if tmp_path and tmp_path.exists():
+                    tmp_path.unlink()
+            except Exception:
+                pass
+        sessions.clear()
+
 
     def _sandbox_path(self, raw_path: str) -> Path:
         """
@@ -475,14 +498,17 @@ class AgentRuntime(IdentityRuntime):
         })
 
         # Continue protocol loop with existing proc
-        return run_agent_loop(
-            self,
-            paused_state["agent_path"],
-            paused_state["agent_args"],
-            proc=proc,
-            simulation_input=None,
-            resume_input=None,
-        )
+        try:
+            return run_agent_loop(
+                self,
+                paused_state["agent_path"],
+                paused_state["agent_args"],
+                proc=proc,
+                simulation_input=None,
+                resume_input=None,
+            )
+        finally:
+            self._cleanup_state_write_sessions()
 
 def extract_logical_result(result: dict) -> dict:
     """

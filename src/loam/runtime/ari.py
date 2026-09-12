@@ -5,6 +5,12 @@ import uuid
 import base64
 from typing import Any, Dict, Optional
 
+# Below MAX_PAYLOAD_BYTES (8192, enforced in runtime/protocol.py) with margin
+# for JSON-escaping overhead and worst-case non-ASCII expansion.
+STATE_WRITE_SINGLE_SHOT_LIMIT = 7168   # below this: one plain state.write call
+STATE_WRITE_CHUNK_SAFETY_CAP = 6144    # hard ceiling every write_chunk message must clear
+STATE_WRITE_CHUNK_CHAR_ESTIMATE = 900  # initial chunk length guess, in characters
+
 
 class Agent:
     def __init__(self):
@@ -234,9 +240,67 @@ class Agent:
             return None
 
     def state_write(self, path: str, data: str) -> bool:
-        """Write a UTF‑8 file into the identity's state directory."""
-        result = self.tool("state.write", {"path": path, "data": data})
-        return result["exit_code"] == 0
+        """Write a UTF‑8 file into the identity's state directory. Chunks
+        transparently if the payload would exceed the tool-call size cap."""
+        return self._state_write_impl(path, data)["ok"]
+
+    def state_write_detailed(self, path: str, data: str) -> Dict[str, Any]:
+        """Same as state_write, but returns {"ok": bool, "error": str|None}
+        with the real failure reason instead of discarding it."""
+        return self._state_write_impl(path, data)
+
+    def _state_write_impl(self, path: str, data: str) -> Dict[str, Any]:
+        single_shot = json.dumps([{"path": path, "data": data}]).encode("utf-8")
+        if len(single_shot) <= STATE_WRITE_SINGLE_SHOT_LIMIT:
+            result = self.tool("state.write", {"path": path, "data": data})
+            return self._interpret_tool_result(result)
+
+        begin = self.tool("state.write_begin", {"path": path})
+        interpreted = self._interpret_tool_result(begin)
+        if not interpreted["ok"]:
+            return interpreted
+        try:
+            handle = json.loads(begin["stdout"])["handle"]
+        except Exception as e:
+            return {"ok": False, "error": f"malformed write_begin response: {e}"}
+
+        idx, n = 0, len(data)
+        while idx < n:
+            chunk_len = min(STATE_WRITE_CHUNK_CHAR_ESTIMATE, n - idx)
+            candidate = data[idx: idx + chunk_len]
+            # Defensive measure-and-shrink: verify actual encoded size before
+            # sending, so worst-case escaping (e.g. all-emoji content) never
+            # crosses the cap even though the base estimate assumes BMP text.
+            for _ in range(20):
+                msg_bytes = json.dumps([{"handle": handle, "data": candidate}]).encode("utf-8")
+                if len(msg_bytes) <= STATE_WRITE_CHUNK_SAFETY_CAP or chunk_len <= 1:
+                    break
+                chunk_len = max(1, chunk_len // 2)
+                candidate = data[idx: idx + chunk_len]
+
+            interpreted = self._interpret_tool_result(
+                self.tool("state.write_chunk", {"handle": handle, "data": candidate})
+            )
+            if not interpreted["ok"]:
+                self.tool("state.write_abort", {"handle": handle})
+                return interpreted
+            idx += chunk_len
+
+        commit = self.tool("state.write_commit", {"handle": handle})
+        return self._interpret_tool_result(commit)
+
+    def _interpret_tool_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        if result["exit_code"] == 0:
+            return {"ok": True, "error": None}
+        error = result.get("stderr") or ""
+        stdout = result.get("stdout")
+        if stdout:
+            try:
+                payload = json.loads(stdout)
+                error = payload.get("error", error) or error
+            except Exception:
+                error = stdout or error
+        return {"ok": False, "error": error or "unknown error"}
 
     # ============================================================
     # Artifacts

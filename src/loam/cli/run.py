@@ -10,12 +10,7 @@ from loam.substrate.attest_chronicle import attest_chronicle
 
 
 def cmd_run(args):
-    # Split Loam args from agent args using --
-    if "--" in args.args:
-        sep = args.args.index("--")
-        agent_args = args.args[sep+1:]
-    else:
-        agent_args = []
+    agent_args = args.args
 
     # Resolve human name / identity fingerprint / UUID → canonical store_id
     store_id = resolve_store_identifier(args.store_id)

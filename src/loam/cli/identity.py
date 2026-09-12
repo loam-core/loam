@@ -41,10 +41,6 @@ from loam.identity.master_key import migrate_master_key_to_passphrase
 from loam.identity.keysources import load_signer_from_keysource,  _passphrase_cache 
 from ..cli.session import clear_all_cached_passphrases, clear_cached_passphrase, set_cached_passphrase
  
-
-
-
-
 import getpass
 
 # ------------------------------------------------------------

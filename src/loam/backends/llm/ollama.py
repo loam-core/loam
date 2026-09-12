@@ -35,10 +35,10 @@ class Backend(LLMBackend):
                 payload["top_k"] = tags["top_k"]
 
             r = requests.post(
-                "http://192.168.1.123:11434/api/generate",
+                "http://192.168.1.100:11434/api/generate",
                 json=payload,
                 stream=True,
-                timeout=10,
+                timeout=30,
             )
 
             output = []
