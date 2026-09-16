@@ -53,13 +53,17 @@ class IdentityRuntime:
     def assert_not_simulation(self):
         return
 
-    def __init__(self, identity_path: Path, passphrase=None):
+    def __init__(self, identity_path: Path, *, signer, ksctx):
+
         # ------------------------------------------------------------
         # Identity-plane configuration
         # ------------------------------------------------------------
         self.config = Config(store_path=identity_path)
-        self.passphrase = passphrase
-        self.ksctx = KeySourceContext(passphrase=passphrase)
+
+        # signer + ksctx now come from UnlockIdentity
+        self.signer = signer
+        self.ksctx = ksctx
+        
         # Store ontology
         self.store_path = Path(identity_path)
         self.store_id = self.store_path.name

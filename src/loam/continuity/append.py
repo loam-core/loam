@@ -110,6 +110,11 @@ def append_continuity_record(store_id: str, record: dict):
         # Identity mutations MUST NOT have a state hash in v1
         assert record.get("state_hash") is None
 
+    elif kind == "unlock":
+        # Unlock MUST carry forward the previous state hash.
+        # So state_hash may be None (no continuity yet) or equal to the last record's state_hash.
+        pass
+
     else:
         raise ValueError(f"Unknown continuity kind: {kind}")
 
@@ -126,3 +131,34 @@ def append_continuity_record(store_id: str, record: dict):
         record["hash"],
         record.get("state_hash"),
     )
+
+def create_unlock_record(store_id: str, signer, *, identity_fingerprint_hash: str, mechanism_hash: str):
+    """
+    Create a continuity unlock record.
+    Unlock events do not mutate state, but must carry forward the last state_hash
+    so the state continuity boundary remains enforced.
+    """
+    prev = load_last_record(store_id)
+    prev_state_hash = prev.get("state_hash") if prev else None
+
+    record = create_continuity_record(
+        store_id,
+        signer,
+        identity_fingerprint_hash=identity_fingerprint_hash,
+        state_hash=prev_state_hash,
+        kind="unlock",
+    )
+
+    record["mechanism_hash"] = mechanism_hash
+    return record
+
+
+def append_unlock_record(store_id: str, signer, *, identity_fingerprint_hash: str, mechanism_hash: str):
+    record = create_unlock_record(
+        store_id,
+        signer,
+        identity_fingerprint_hash=identity_fingerprint_hash,
+        mechanism_hash=mechanism_hash,
+    )
+    append_continuity_record(store_id, record)
+    return record

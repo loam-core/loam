@@ -1,10 +1,12 @@
 # loam/cli/run.py
 
+from hashlib import sha256
 from pathlib import Path
 
+from loam.identity.keysources import KeySourceContext
 from loam.identity.metadata import resolve_store_identifier
-from loam.identity.paths import store_path
 
+from loam.identity.unlock import UnlockIdentity
 from loam.runtime.agent_runtime import AgentRuntime
 from loam.substrate.attest_chronicle import attest_chronicle
 
@@ -12,44 +14,46 @@ from loam.substrate.attest_chronicle import attest_chronicle
 def cmd_run(args):
     agent_args = args.args
 
-    # Resolve human name / identity fingerprint / UUID → canonical store_id
     store_id = resolve_store_identifier(args.store_id)
 
-    # 1. Chronicle attestation (non‑blocking)
     level, reason, details = attest_chronicle(store_id)
     if level != "ok":
         print_chronicle_attestation(level, reason, details)
 
-    # --- FIX: resolve the agent path once ---
     exec_path = Path(args.exec_path).expanduser().resolve()
 
-    # Construct runtime for this execution
+    # -------------------------------
+    # NEW: UnlockIdentity
+    # -------------------------------
+    ksctx = KeySourceContext(passphrase=args.passphrase)
+    mechanism_hash = sha256(args.passphrase.encode()).hexdigest()
+    session = UnlockIdentity(store_id, mechanism_hash, ksctx)
+
+    # -------------------------------
+    # NEW: Construct runtime using session
+    # -------------------------------
     runtime = AgentRuntime(
-        identity_path=store_path(store_id),
+        identity_path=session.identity_path,
+        signer=session.signer,
+        ksctx=session.ksctx,
         workdir=str(exec_path.parent),
         force_python_driver=args.python_driver,
         legacy_python=args.legacy_python,
-        passphrase=args.passphrase,
     )
 
-    # Execute the command inside the store envelope
     status, result = runtime.run(
-        agent_path=str(exec_path),   # <-- FIX: use resolved path
+        agent_path=str(exec_path),
         agent_args=agent_args,
     )
 
-    # Loop until the agent finishes
     while status == "await_input":
         print(result["prompt"])
         user_input = input("> ")
-
-        status, result = runtime.resume(
-            paused_state=result,
-            user_input=user_input,
-        )
+        status, result = runtime.resume(paused_state=result, user_input=user_input)
 
     print("Execution finished:", status, result)
     return 0
+
 
 
 
