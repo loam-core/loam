@@ -25,6 +25,7 @@ from loam.chronicle.emitter import emit_chronicle_event
 from loam.continuity.append import (
     create_continuity_record,
     append_continuity_record,
+    load_last_record,
 )
 from loam.identity.secrets import SECRET_OPERATIONS, secret_load
 from loam.identity.identity_fingerprint import (
@@ -189,6 +190,37 @@ class IdentityRuntime:
 
         self.current_continuity_seq = continuity_record["seq"]
         return continuity_record, new_state_hash
+
+    def continuity_info(self) -> dict:
+        """
+        Lightweight, read-only continuity primitive for agent code.
+
+        Reports the state of the continuity log as of process start: the
+        last recorded seq/state_hash/kind, and whether this identity has any
+        continuity history at all (``fresh``). Unlike finalize_continuity(),
+        this never appends a record and is safe to call from a simulation —
+        it exists so continuity-aware agent logic can answer "have I run
+        before, and what did I leave behind?" without shelling out to
+        `loam logs show continuity`.
+
+        Note this does not reflect *this* run's own continuity record: that
+        record is only created by finalize_continuity(), which runs after
+        the agent process finishes (see AgentRuntime.run()).
+        """
+        last = load_last_record(self.store_id)
+        if last is None:
+            return {
+                "fresh": True,
+                "last_seq": 0,
+                "last_state_hash": None,
+                "last_kind": None,
+            }
+        return {
+            "fresh": False,
+            "last_seq": last["seq"],
+            "last_state_hash": last.get("state_hash"),
+            "last_kind": last.get("kind"),
+        }
 
     # ------------------------------------------------------------
     # State hashing
@@ -378,6 +410,36 @@ def hash_str(s: str) -> str:
 class PolicyEnforcer:
     def __init__(self, runtime):
         self.rt = runtime
+
+    def capability_manifest(self) -> dict:
+        """
+        Summarized, agent-readable view of this identity's policy
+        configuration, derived from the same policy_* config the allow_*
+        checks below enforce. Sent to the agent in the init message
+        (see runtime/protocol.py) so it can introspect what it's allowed to
+        do instead of discovering it by triggering policy_denied failures.
+
+        This is a read-only summary of config already loaded at runtime
+        construction time, not a new capability grant of its own.
+        """
+        return {
+            "tools": {
+                "allowed": list(self.rt.policy_tools.get("allowed", [])),
+            },
+            "http": {
+                "allowed_domains": list(self.rt.policy_http.get("allowed_domains", [])),
+            },
+            "filesystem": {
+                "allowed_paths": list(self.rt.policy_filesystem.get("allowed_paths", [])),
+            },
+            "llm": {
+                "allowed_models": list(self.rt.policy_llm.get("allowed_models", [])),
+            },
+            "subprocess": {
+                "allowed_commands": list(self.rt.policy_subprocess.get("allowed_commands", [])),
+                "allowed_paths": list(self.rt.policy_subprocess.get("allowed_paths", [])),
+            },
+        }
 
     def allow_llm_model(self, model):
         if model is None:

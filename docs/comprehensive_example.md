@@ -198,8 +198,7 @@ This is the recommended pattern for any real‑world Loam agent that:
 ```python
 #!/usr/bin/env python3
 import sys
-from loam.runtime.ari import Agent
-from loam.sdk.ari_helpers import bind
+from loam.sdk import Agent
 
 
 class SummaryAgent(Agent):
@@ -215,34 +214,18 @@ class SummaryAgent(Agent):
     # REAL EXECUTION
     # -------------------------
     def real_mode(self):
-        (
-            llm,
-            http,
-            read,
-            write,
-            delete,
-            listdir,
-            search,
-            state_read,
-            state_write,
-            run,
-            simulate,
-            emit,
-            secret,
-            finish,
-            input_prompt,
-        ) = bind(self)
+        ctx = self.ctx
 
         BACKEND = "ollama"
         MODEL = "llama3.1:8b"
         SOURCE_URL = "https://example.com"
 
         # 1. Fetch some data via HTTP
-        http_result = http("GET", SOURCE_URL)
+        http_result = ctx.http("GET", SOURCE_URL)
         http_body = http_result.get("stdout") or ""
 
         # 2. Ask the LLM to summarize it
-        summary = llm(
+        summary = ctx.llm(
             f"Summarize the following content for the operator:\n\n{http_body}",
             backend=BACKEND,
             model=MODEL,
@@ -254,11 +237,11 @@ class SummaryAgent(Agent):
             "state_key": "last_summary",
             "summary_preview": summary,
         }
-        sim_result = simulate(simulation_input)
+        sim_result = ctx.simulate(simulation_input)
         print("SIM RESULT:", sim_result, file=sys.stderr)
 
         # 4. Ask the LLM to evaluate the simulated result
-        eval_text = llm(
+        eval_text = ctx.llm(
             "You are reviewing a simulated agent action.\n\n"
             f"Simulation result:\n{sim_result}\n\n"
             "Question: Is it reasonable to store this summary as the new 'last_summary'?",
@@ -267,7 +250,7 @@ class SummaryAgent(Agent):
         )
 
         # 5. Ask the human to confirm (this is the checkpoint boundary)
-        human_answer = input_prompt(
+        human_answer = ctx.input(
             "Store this summary as the new last_summary? (yes/no)\n\n"
             f"LLM evaluation:\n{eval_text}\n\n"
             f"Summary:\n{summary}\n\n"
@@ -281,22 +264,22 @@ class SummaryAgent(Agent):
         # 6. If approved, write to state
         if should_commit:
             try:
-                state_write("last_summary", summary)
+                ctx.state_write("last_summary", summary)
                 committed = True
             except Exception as e:
                 state_error = str(e)
 
         # 7. Now (in the resumed process) write summary to scratch and emit artifact
         scratch_path = "scratch://summary.txt"
-        write(scratch_path, summary)
+        ctx.write(scratch_path, summary)
 
         try:
-            emit(scratch_path, description="HTTP summary for this identity")
+            ctx.emit(scratch_path, description="HTTP summary for this identity")
         except Exception as e:
             print("Artifact emit failed:", e, file=sys.stderr)
 
         # 8. Finish with a structured result
-        finish(
+        ctx.finish(
             {
                 "source_url": SOURCE_URL,
                 "summary": summary,
@@ -313,27 +296,10 @@ class SummaryAgent(Agent):
     # SIMULATION EXECUTION
     # -------------------------
     def simulation_mode(self):
-        (
-            llm,
-            http,
-            read,
-            write,
-            delete,
-            listdir,
-            search,
-            state_read,
-            state_write,
-            run,
-            simulate,
-            emit,
-            secret,
-            finish,
-            input_prompt,
-        ) = bind(self)
-
+        ctx = self.ctx
         payload = self.simulation_input
 
-        result = llm(
+        result = ctx.llm(
             "Simulate evaluating this agent action:\n\n"
             f"{payload}\n\n"
             "Return a short JSON-friendly assessment.",
@@ -341,7 +307,7 @@ class SummaryAgent(Agent):
             model="llama3.1:8b",
         )
 
-        finish({"simulated_evaluation": result})
+        ctx.finish({"simulated_evaluation": result})
 
 
 if __name__ == "__main__":

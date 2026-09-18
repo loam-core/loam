@@ -12,6 +12,9 @@ from urllib.parse import urlparse
 from loam.chronicle.emitter import sha256_bytes
 from loam.continuity.hash import compute_file_hash
 from loam.crypto.canonical import canonical_json
+from loam.identity.keysources import KeySourceContext
+from loam.identity.metadata import resolve_store_identifier
+from loam.identity.unlock import UnlockIdentity
 from loam.runtime.exec_runtime import hash_file
 from loam.runtime.id_runtime import IdentityRuntime
 from loam.runtime.driver.driver import LocalPythonDriver
@@ -81,6 +84,51 @@ class AgentRuntime(IdentityRuntime):
         
         self.llm_backend = None
 
+    @classmethod
+    def open(
+        cls,
+        store_id: str,
+        passphrase: str,
+        *,
+        workdir=None,
+        force_python_driver=None,
+        legacy_python=False,
+        **kwargs,
+    ) -> "AgentRuntime":
+        """
+        Construct a ready-to-.run() AgentRuntime from just a store id and
+        passphrase, for embedding Loam in a Python host app.
+
+        This is what `loam run` (loam/cli/run.py) hand-assembles piece by
+        piece — resolving the store id, building a KeySourceContext,
+        deriving a mechanism_hash, and unlocking the identity to get a
+        signer — collapsed into one call so a host app doesn't need to
+        reimplement that unlock sequence itself:
+
+            ksctx = KeySourceContext(passphrase=passphrase)
+            mechanism_hash = sha256(passphrase.encode()).hexdigest()
+            session = UnlockIdentity(store_id, mechanism_hash, ksctx)
+            AgentRuntime(identity_path=session.identity_path,
+                         signer=session.signer, ksctx=session.ksctx, ...)
+
+        Note this call unlocks the identity (appends a continuity unlock
+        record) as a side effect, same as `loam run` does — it is not free
+        to call repeatedly just to inspect state.
+        """
+        resolved_store_id = resolve_store_identifier(store_id)
+        ksctx = KeySourceContext(passphrase=passphrase)
+        mechanism_hash = hashlib.sha256(passphrase.encode()).hexdigest()
+        session = UnlockIdentity(resolved_store_id, mechanism_hash, ksctx)
+
+        return cls(
+            identity_path=session.identity_path,
+            signer=session.signer,
+            ksctx=session.ksctx,
+            workdir=workdir,
+            force_python_driver=force_python_driver,
+            legacy_python=legacy_python,
+            **kwargs,
+        )
 
     def run(self, agent_path, agent_args, simulation_input=None):
         # Create scratch dir at the start of the run
@@ -229,29 +277,43 @@ class AgentRuntime(IdentityRuntime):
             params = params[0]
 
         # Policy checks
-        self.policy.allow_tool(tool_name)
+        try:
+            self.policy.allow_tool(tool_name)
 
-        if tool_name == "http.request":
-            url = params.get("url")
-            if url:
-                domain = urlparse(url).netloc
-                self.policy.allow_http_domain(domain)
+            if tool_name == "http.request":
+                url = params.get("url")
+                if url:
+                    domain = urlparse(url).netloc
+                    self.policy.allow_http_domain(domain)
 
-        if tool_name.startswith("fs."):
-            path = params.get("path")
-            if path is not None:
-                self.policy.allow_fs_path(path)
+            if tool_name.startswith("fs."):
+                path = params.get("path")
+                if path is not None:
+                    self.policy.allow_fs_path(path)
 
-        if tool_name == "process.run":
-            cmd_arg = params.get("argv") or params.get("cmd")
-            if cmd_arg is not None:
-                # Resolve the executable path
-                exe = shutil.which(cmd_arg[0])
-                if exe is None:
-                    raise RuntimeError(f"Executable not found: {cmd_arg[0]}")
+            if tool_name == "process.run":
+                cmd_arg = params.get("argv") or params.get("cmd")
+                if cmd_arg is not None:
+                    # Resolve the executable path
+                    exe = shutil.which(cmd_arg[0])
+                    if exe is None:
+                        raise RuntimeError(f"Executable not found: {cmd_arg[0]}")
 
-                # Pass the resolved path to the membrane
-                self.policy.allow_subprocess(exe)
+                    # Pass the resolved path to the membrane
+                    self.policy.allow_subprocess(exe)
+        except RuntimeError as e:
+            # Policy denial (or a pre-flight failure like a missing
+            # executable) must come back as a normal tool_result the agent
+            # can catch, not as an exception that kills the whole run loop.
+            self.chronicle("tool_denied", {
+                "tool": tool_name,
+                "error": str(e),
+            })
+            return SimpleResult(
+                returncode=1,
+                stdout=json.dumps({"error": str(e)}),
+                stderr=str(e),
+            )
 
         # Chronicle start
         self.chronicle("tool_start", {

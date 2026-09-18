@@ -50,6 +50,10 @@ def run_agent_loop(runtime, agent_path, agent_args, proc=None, simulation_input=
             "envelope": runtime.envelope,
             "envelope_hash": runtime.envelope_hash,
             "args": agent_args,
+            # Summarized policy view, not part of the hashed/signed envelope
+            # itself (envelope_hash is left unchanged for compatibility) —
+            # see PolicyEnforcer.capability_manifest().
+            "capabilities": runtime.policy.capability_manifest(),
         }
 
         if simulation_input is not None:
@@ -166,6 +170,8 @@ def run_agent_loop(runtime, agent_path, agent_args, proc=None, simulation_input=
 
             artifact_info = maybe_artifact(
                 store_id=runtime.store_id,
+                identity_fingerprint_hash=runtime.identity_fingerprint_hash(),
+                signer=runtime.signer,
                 tool=tool_name,
                 stdout=result.stdout.encode(),
                 stderr=result.stderr.encode(),
@@ -285,6 +291,26 @@ def run_agent_loop(runtime, agent_path, agent_args, proc=None, simulation_input=
             runtime.driver.send_json(proc, resp)
             continue
 
+        elif msg_type == "continuity_info":
+            call_id = msg["call_id"]
+            try:
+                info = runtime.continuity_info()
+                resp = {
+                    "type": "continuity_info_result",
+                    "call_id": call_id,
+                    "result": info,
+                    "error": None,
+                }
+            except Exception as e:
+                resp = {
+                    "type": "continuity_info_result",
+                    "call_id": call_id,
+                    "result": None,
+                    "error": str(e),
+                }
+            runtime.driver.send_json(proc, resp)
+            continue
+
         elif msg_type == "await_input":
             call_id = msg["call_id"]
             prompt = msg.get("prompt", "")
@@ -346,7 +372,7 @@ def log(label):
 
 
 
-def maybe_artifact(store_id, tool, stdout, stderr, exit_code, artifacts_path):
+def maybe_artifact(store_id, identity_fingerprint_hash, signer, tool, stdout, stderr, exit_code, artifacts_path):
     if len(stdout) + len(stderr) <= MAX_INLINE_BYTES:
         return {
             "stdout": stdout.decode("utf-8", errors="ignore"),
@@ -356,16 +382,16 @@ def maybe_artifact(store_id, tool, stdout, stderr, exit_code, artifacts_path):
 
     envelope, canonical = build_tool_artifact_envelope(
         store_id=store_id,
+        identity_fingerprint_hash=identity_fingerprint_hash,
         tool=tool,
         stdout=stdout,
         stderr=stderr,
         exit_code=exit_code,
     )
 
-    envelope["signature"] = sign_artifact_envelope(store_id, canonical)
+    envelope["signature"] = sign_artifact_envelope(signer, canonical)
 
     path = write_tool_artifact_files(
-        store_id=store_id,
         tool=tool,
         stdout=stdout,
         stderr=stderr,
