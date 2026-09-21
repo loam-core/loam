@@ -93,6 +93,10 @@ def issue_identity(passphrase: str | None = None):
     "process.run",
     "state.read",
     "state.write",
+    "state.write_begin",
+    "state.write_chunk",
+    "state.write_commit",
+    "state.write_abort",
     "artifact.emit",
     ]
 
@@ -114,7 +118,7 @@ def issue_identity(passphrase: str | None = None):
     allowed_domains = [
     "api.github.com",
     "pypi.org",
-    "files.pythonhosted.org",
+    "*.pythonhosted.org",
     ]
 
     [llm]

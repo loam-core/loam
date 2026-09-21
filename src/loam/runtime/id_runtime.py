@@ -39,6 +39,22 @@ from loam.substrate.trust import verify_trust_boundaries
 
 from ..substrate.config import Config
 
+
+class ScopedSigner:
+    def __init__(self, runtime, inner):
+        self._runtime = runtime
+        self._inner = inner
+        self._invalid = False
+
+    def sign(self, message: bytes) -> bytes:
+        if self._invalid or not self._runtime._live:
+            raise RuntimeError("Signer is only valid during AgentRuntime.run()")
+        return self._inner.sign(message)
+
+    def invalidate(self):
+        self._invalid = True
+
+
 class IdentityRuntime:
     """
     IdentityRuntime is the identity‑plane membrane.
@@ -155,7 +171,13 @@ class IdentityRuntime:
         with open(descriptor_path, "r") as f:
             signer_config = json.load(f)
 
-        self.signer = create_signer(signer_config, ksctx=self.ksctx)
+        # Only create a signer if one was not provided by the caller
+        if self.signer is None:
+            self.signer = create_signer(signer_config, ksctx=self.ksctx)
+
+        # Wrap signer for runtime boundary enforcement
+        if not isinstance(self.signer, ScopedSigner):
+            self.signer = ScopedSigner(runtime=self, inner=self.signer)
 
         # 3. Mark authority initialized BEFORE trust checks
         self._authority_initialized = True

@@ -57,13 +57,14 @@ class AgentRuntime(IdentityRuntime):
         """
     def __init__(self, identity_path, workdir=None, force_python_driver=None, legacy_python=False, **kwargs):
         super().__init__(identity_path, **kwargs)
-
+        self._used = False
+        self._live = False
         self.workdir = workdir or os.getcwd()
         self.force_python_driver = force_python_driver
         self.legacy_python = legacy_python
         self.scratch_dir = None
         self._state_write_sessions = {}
-        
+
         # Driver selection
         driver_lib = os.getenv("LOAM_DRIVER")
         if self.force_python_driver:
@@ -83,6 +84,7 @@ class AgentRuntime(IdentityRuntime):
         self.artifacts_path.mkdir(parents=True, exist_ok=True)
         
         self.llm_backend = None
+
 
     @classmethod
     def open(
@@ -120,7 +122,8 @@ class AgentRuntime(IdentityRuntime):
         mechanism_hash = hashlib.sha256(passphrase.encode()).hexdigest()
         session = UnlockIdentity(resolved_store_id, mechanism_hash, ksctx)
 
-        return cls(
+        # IMPORTANT: pass the raw signer, not a ScopedSigner
+        runtime = cls(
             identity_path=session.identity_path,
             signer=session.signer,
             ksctx=session.ksctx,
@@ -130,7 +133,16 @@ class AgentRuntime(IdentityRuntime):
             **kwargs,
         )
 
+        return runtime
+
+
     def run(self, agent_path, agent_args, simulation_input=None):
+        # Ensure this runtime instance is only used once per execution.
+        if self._used:
+            raise RuntimeError("This AgentRuntime instance has already been used for a run.")
+        self._used = True
+        self._live = True
+
         # Create scratch dir at the start of the run
         self.scratch_dir = Path(tempfile.mkdtemp(prefix="loam-scratch-"))
 
@@ -198,8 +210,15 @@ class AgentRuntime(IdentityRuntime):
             # ALWAYS clean up scratch, even if the agent crashes
             self._cleanup_state_write_sessions()
             shutil.rmtree(self.scratch_dir, ignore_errors=True)
+            self._live = False
 
+            signer = getattr(self, "signer", None)
+            if signer is not None and hasattr(signer, "invalidate"):
+                signer.invalidate()
 
+            continuity = getattr(self, "continuity", None)
+            if continuity is not None and hasattr(continuity, "invalidate"):
+                continuity.invalidate()
 
     def is_simulation(self) -> bool:
         return False
@@ -264,7 +283,20 @@ class AgentRuntime(IdentityRuntime):
             stderr=stderr,
         )
  
-    
+    # ------------------------------------------------------------
+    # Continuity (runtime-scoped)
+    # ------------------------------------------------------------
+    def finalize_continuity(self):
+        if not self._live:
+            raise RuntimeError("finalize_continuity only valid during AgentRuntime.run()")
+        return super().finalize_continuity()
+
+    def continuity_info(self) -> dict:
+        if not self._live:
+            raise RuntimeError("continuity_info only valid during AgentRuntime.run()")
+        return super().continuity_info()
+
+
     #=================================================================
     # Tool dispatcher
     #=================================================================
@@ -301,6 +333,7 @@ class AgentRuntime(IdentityRuntime):
 
                     # Pass the resolved path to the membrane
                     self.policy.allow_subprocess(exe)
+
         except RuntimeError as e:
             # Policy denial (or a pre-flight failure like a missing
             # executable) must come back as a normal tool_result the agent

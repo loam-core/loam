@@ -56,9 +56,6 @@ def cmd_run(args):
 
 
 
-
-
-
 def print_chronicle_attestation(level, reason, details):
     """
     Pretty-print Chronicle attestation results in a CLI-friendly format.
