@@ -13,8 +13,19 @@ This project follows semantic versioning.
 - Documentation: major rewrite and reorganization for clarity and correctness.
 - Quickstart renamed to `getting_started.md` and validated on a clean VM.
 
-## v0.1.0 — Initial Release
+### Internal / Substrate
+- Introduced a real runtime trust membrane (_live gating + one‑shot runtime)
+- Structural signer wrapping moved to initialize_authority(); signer invalidated after run
+- Continuity now guarded via AgentRuntime overrides
+- Refactored identity unlock flow; removed silent unlocks; unified signer derivation
+- Stabilized continuity chain semantics (seq/hash/kind)
+- Unified envelope semantics across runtime + protocol
+- Python driver correctness fixes
+- Added chunked‑write protocol + new state tools
+- Added Discord backend tooling for ARI agents
+- A truncated/hand-edited file missing its trailing newline can no longer cause the next real append to glue onto the previous line
 
+## v0.1.0 — Initial Release
 - Identity substrate
 - Continuity
 - Chronicle

@@ -122,7 +122,18 @@ def append_continuity_record(store_id: str, record: dict):
     log_path = continuity_log(store_id)
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # If the log's last byte isn't a newline (e.g. a hand-edited or
+    # crash-truncated file), a plain append would glue this record onto the
+    # end of the previous line instead of starting a new one.
+    needs_leading_newline = False
+    if log_path.exists() and log_path.stat().st_size > 0:
+        with open(log_path, "rb") as f:
+            f.seek(-1, 2)
+            needs_leading_newline = f.read(1) != b"\n"
+
     with open(log_path, "a") as f:
+        if needs_leading_newline:
+            f.write("\n")
         f.write(json.dumps(record) + "\n")
 
     witness_publish(

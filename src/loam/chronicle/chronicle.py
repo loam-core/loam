@@ -78,7 +78,18 @@ def append_chronicle_entry(store_id: str, event: dict, signer):
     _rotate_if_needed(store_dir)
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # If the log's last byte isn't a newline (e.g. a hand-edited or
+    # crash-truncated file), a plain append would glue this event onto the
+    # end of the previous line instead of starting a new one.
+    needs_leading_newline = False
+    if log_path.exists() and log_path.stat().st_size > 0:
+        with open(log_path, "rb") as f:
+            f.seek(-1, 2)
+            needs_leading_newline = f.read(1) != b"\n"
+
     with open(log_path, "a") as f:
+        if needs_leading_newline:
+            f.write("\n")
         f.write(json.dumps(event, separators=(",", ":")) + "\n")
 
     return event
